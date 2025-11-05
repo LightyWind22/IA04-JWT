@@ -9,6 +9,9 @@ async function bootstrap() {
   
   // Enable CORS - do NOT use wildcard when credentials=true
   const frontendOrigin = process.env.FRONTEND_URL || 'http://localhost:5173';
+  // THÊM DÒNG NÀY ĐỂ DEBUG
+    console.log('==== SỬ DỤNG FRONTEND ORIGIN:', frontendOrigin);
+  
   app.enableCors({
     origin: frontendOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
