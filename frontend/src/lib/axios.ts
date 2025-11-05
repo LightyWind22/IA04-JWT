@@ -86,34 +86,45 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    // If the error is not 401 or the request was for refreshing token, reject
-    if (
-      error.response?.status !== 401 ||
-      originalRequest.url === '/auth/refresh'
-    ) {
+    // Ngay lập tức reject nếu là lỗi từ endpoints auth
+    if (originalRequest.url?.includes('/auth/login') || 
+        originalRequest.url?.includes('/auth/register')) {
+      console.log('Auth endpoint error, rejecting immediately:', {
+        url: originalRequest.url,
+        status: error.response?.status,
+        data: error.response?.data
+      });
       return Promise.reject(error);
     }
 
-    try {
-      if (!isRefreshing) {
-        isRefreshing = true; // Set refreshing flag
-        const newAccessToken = await refreshAccessToken(); // Refresh the access token
-        isRefreshing = false; // Reset refreshing flag
-        onTokenRefreshed(newAccessToken); // Notify all subscribers with new token
-      }
+    // Xử lý refresh token chỉ cho các endpoint khác khi nhận 401
+    if (error.response?.status === 401 && originalRequest.url !== '/auth/refresh') {
+      try {
+        if (!isRefreshing) {
+          console.log('Token expired, attempting refresh...');
+          isRefreshing = true;
+          const newAccessToken = await refreshAccessToken();
+          isRefreshing = false;
+          onTokenRefreshed(newAccessToken);
+        }
 
-      // Create a new promise that will be resolved when the token is refreshed
-      const retryOriginalRequest = new Promise((resolve) => {
-        subscribeTokenRefresh((token: string) => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          resolve(axiosInstance(originalRequest));
+        // Create a new promise that will be resolved when the token is refreshed
+        const retryOriginalRequest = new Promise((resolve) => {
+          subscribeTokenRefresh((token: string) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(axiosInstance(originalRequest));
+          });
         });
-      });
 
-      return retryOriginalRequest;
-    } catch (refreshError) {
-      clearTokens();
-      return Promise.reject(refreshError);
+        return retryOriginalRequest;
+      } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
+        clearTokens();
+        return Promise.reject(refreshError);
+      }
     }
+
+    // Reject tất cả các lỗi khác
+    return Promise.reject(error);
   }
 );

@@ -2,7 +2,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Link } from 'react-router-dom';
-import { useLoginMutation } from '../hooks/useLoginMutation';
+import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '../hooks/useAuth';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email'),
@@ -12,20 +13,35 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const auth = useAuth();
   const {
     register,
     handleSubmit,
+    setError,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
-  // Use login mutation which delegates to AuthProvider
-  const loginMutation = useLoginMutation();
-  const { mutate: loginMutate, isLoading: loginLoading, isError: loginIsError, error: loginError } = loginMutation as any;
+  const { mutate, isPending, isError, error } = useMutation({
+    mutationFn: (data: LoginFormData) => auth.login(data),
+    onError: (error: Error) => {
+      console.error('Mutation error:', error);
+      setError('root.serverError', {
+        type: 'manual',
+        message: error.message
+      });
+    },
+    retry: 0
+  });
 
   const onSubmit = async (data: LoginFormData) => {
-    loginMutate(data);
+    try {
+      console.log('Submitting login form:', data);
+      await mutate(data);
+    } catch (error) {
+      console.error('Login failed:', error);
+    }
   };
 
   return (
@@ -41,6 +57,8 @@ export default function Login() {
               {...register('email')}
               type="email"
               id="email"
+              name="email"
+              autoComplete="email"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
             {errors.email && (
@@ -56,6 +74,8 @@ export default function Login() {
               {...register('password')}
               type="password"
               id="password"
+              name="password"
+              autoComplete="current-password"
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             />
             {errors.password && (
@@ -65,17 +85,18 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={loginLoading}
               className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
             >
-              {loginLoading ? 'Signing in...' : 'Sign In'}
+              Sign In
             </button>
-            {loginIsError && (
-              <p className="mt-4 text-center text-sm text-red-600">{
-                (loginError as any)?.response?.data?.message || 'Login failed. Please check your credentials.'
-              }</p>
-            )}
         </form>
+
+        {(errors.root?.serverError || (isError && error)) && (
+            <p className="mt-4 text-center text-sm text-red-60">
+              {errors.root?.serverError?.message || 
+               (error instanceof Error ? error.message : 'Login failed. Please try again.')}
+            </p>
+        )}
 
         <p className="mt-4 text-center text-sm text-gray-600">
           Don't have an account?{' '}

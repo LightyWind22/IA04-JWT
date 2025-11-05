@@ -3,12 +3,13 @@ import { AuthState, LoginCredentials, LoginResponse, User } from '../types/auth.
 import { axiosInstance, clearTokens, setAccessToken } from './axios';
 import { AuthContext } from './authContext';
 import { useNavigate } from 'react-router-dom';
+import axios, { AxiosError } from 'axios';
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
     const navigate = useNavigate();
     const [state, setState] = useState<AuthState>({
         user: null,
@@ -47,11 +48,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Xử lý đăng nhập
     const login = useCallback(async (credentials: LoginCredentials) => {
+        console.log('Attempting login...', credentials.email);
+        
         try {
             // Gọi API đăng nhập
             const response = await axiosInstance.post<LoginResponse>('/auth/login', credentials);
             const { user, accessToken } = response.data;
-            console.log('Login Response accessToken:', accessToken);
+            console.log('Login successful, got access token');
 
             // Chỉ lưu access token trong memory
             setAccessToken(accessToken);
@@ -63,12 +66,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
             // Chuyển hướng sau khi đăng nhập thành công
             navigate('/home');
-        } catch (error) {
+        } catch (error: unknown) {
+            console.log('Login failed, processing error...', error);
             // Xóa tokens nếu đăng nhập thất bại
             clearTokens();
-            throw error;
+            
+            // Kiểm tra xem có phải AxiosError không
+            if (axios.isAxiosError(error)) {
+                const status = error.response?.status;
+                const serverMessage = error.response?.data?.message;
+                
+                console.error('API Error:', {
+                    status,
+                    message: serverMessage,
+                    data: error.response?.data
+                });
+
+                // Xử lý các trường hợp lỗi cụ thể
+                switch (status) {
+                    case 400:
+                        throw new Error(serverMessage || 'Invalid email or password format. Password must be at least 6 characters.');
+                    case 401:
+                        throw new Error(serverMessage || 'Incorrect email or password.');
+                    case 404:
+                        throw new Error('Account not found.');
+                    case 429:
+                        throw new Error('Too many login attempts. Please try again in a few minutes.');
+                    default:
+                        throw new Error(serverMessage || 'Login failed. Please try again.');
+                }
+            }
+            
+            // Nếu không phải AxiosError, throw error gốc hoặc error mới
+            if (error instanceof Error) {
+                throw error;
+            }
+            
+            throw new Error('An unexpected error occurred');
         }
-    }, [navigate]);
+    }, [navigate, setState]);
 
     // Xử lý đăng xuất
     const logout = useCallback(() => {
@@ -98,14 +134,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }));
     }, []);
 
-    // Tạo object chứa các giá trị và function cần chia sẻ
-    const value = {
-        ...state,
-        login,
-        logout,
-        updateUser,
-    };
-
     // Hiển thị loading state
     if (state.isLoading) {
         return null;
@@ -113,7 +141,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // Render AuthContext.Provider với value
     return (
-        <AuthContext.Provider value={value}>
+        <AuthContext.Provider 
+            value={{
+                ...state,
+                login,
+                logout,
+                updateUser,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );
