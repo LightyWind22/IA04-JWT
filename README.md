@@ -58,7 +58,7 @@ npm run dev
 
 ## Live URLs
 - Frontend (Vercel): [`https://ia4-jwt-fe.vercel.app/`](https://ia4-jwt-fe.vercel.app/)
-- Backend (Vercel): [`https://ia4-jwt-be.vercel.app/`](https://ia4-jwt-be.vercel.app/)
+- Backend (Vercel): [`https://ia04-jwt.onrender.com/`](https://ia04-jwt.onrender.com/)
 
 ## Scripts (common)
 - `npm run dev` – start dev server
@@ -139,7 +139,7 @@ npm run preview
   - Project root: `frontend`
   - Build command: `npm run build`
   - Output directory: `dist`
-  - Env: `VITE_API_BASE_URL=https://ia4-jwt-be.vercel.app`
+  - Env: `VITE_API_BASE_URL=https://ia04-jwt.onrender.com`
 - Backend (Vercel):
   - Project root: `backend`
   - Build command: `npm run build`
@@ -148,7 +148,7 @@ npm run preview
 
 References:
 - Frontend (live): [`https://ia4-jwt-fe.vercel.app/`](https://ia4-jwt-fe.vercel.app/)
-- Backend (live): [`https://ia4-jwt-be.vercel.app/`](https://ia4-jwt-be.vercel.app/)
+- Backend (live): [`https://ia04-jwt.onrender.com/`](hhttps://ia04-jwt.onrender.com/)
 
 # IA03 — User Registration (NestJS + React)
 
