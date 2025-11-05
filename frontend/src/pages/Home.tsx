@@ -1,8 +1,10 @@
 import { useAuth } from '../hooks/useAuth';
 import { getAccessToken } from '../lib/axios';
+import { useUserQuery } from '../hooks/useUserQuery';
 
 export default function Home() {
   const { user, logout } = useAuth();
+  const { data, isLoading } = useUserQuery();
 
   const handleLogout = () => {
     logout();
@@ -13,9 +15,9 @@ export default function Home() {
       <div className="max-w-md w-full bg-white/80 backdrop-blur-sm rounded-[9px] shadow-lg p-8 border border-gray-200 text-center space-y-4">
         <h1 className="text-3xl font-bold text-purple-500 tracking-tighter sm:text-4xl md:text-5xl">Welcome</h1>
         <p className="text-green-600 font-medium">You have logged in successfully.</p>
-        {user && (
+        {(data?.user || user) && (
           <div className="mt-4">
-            <p className="text-gray-600">Welcome <span className="font-medium text-purple-500">{user.email}!</span></p>
+            <p className="text-gray-600">Welcome <span className="font-medium text-purple-500">{(data?.user || user)?.email}!</span></p>
             <p className="text-gray-600 break-all mt-2">Current access token: <span className="font-mono">{getAccessToken() || 'N/A'}</span></p>
           </div>
         )}

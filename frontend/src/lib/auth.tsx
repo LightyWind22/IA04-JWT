@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState, ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AuthState, LoginCredentials, LoginResponse, User } from '../types/auth.types';
 import { axiosInstance, clearTokens, setAccessToken } from './axios';
 import { AuthContext } from './authContext';
@@ -11,6 +12,7 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
     const [state, setState] = useState<AuthState>({
         user: null,
         isAuthenticated: false,
@@ -19,29 +21,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Kiểm tra session hiện tại khi component mount
     useEffect(() => {
+        const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
         const initializeAuth = async () => {
+            // Chiến lược chống logout ngẫu nhiên khi F5: thử /auth/me trước để interceptor tự refresh.
             try {
-                // Gọi trực tiếp /auth/me. Interceptor sẽ tự refresh khi gặp 401 và retry.
-                const response = await axiosInstance.get<{ user: User; accessToken?: string }>("/auth/me");
-                const { user, accessToken: maybeNewAccessToken } = response.data;
+                const meFirst = await axiosInstance.get<{ user: User; accessToken?: string }>("/auth/me");
+                const { user, accessToken: maybeNewAccessToken } = meFirst.data;
+                if (maybeNewAccessToken) setAccessToken(maybeNewAccessToken);
+                setState({ user, isAuthenticated: true, isLoading: false });
+                return;
+            } catch {
+                // Thất bại đường 1: thử đợi ngắn rồi refresh tường minh + gọi lại /auth/me
+            }
 
-                if (maybeNewAccessToken) {
-                    setAccessToken(maybeNewAccessToken);
+            try {
+                await sleep(150);
+                const refreshResp = await axiosInstance.post<{ accessToken: string; user?: User }>("/auth/refresh", {});
+                const bootAccessToken = refreshResp.data.accessToken;
+                const bootUser = refreshResp.data.user;
+                setAccessToken(bootAccessToken);
+                if (bootUser) {
+                    setState({ user: bootUser, isAuthenticated: true, isLoading: false });
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    (queryClient as any).setQueryData(['me'], { user: bootUser });
+                    return;
                 }
-
-                setState({
-                    user,
-                    isAuthenticated: true,
-                    isLoading: false,
-                });
-            } catch (error) {
-                // Không điều hướng ở đây, chỉ reset state. Route guard có thể xử lý redirect.
+                const meResp = await axiosInstance.get<{ user: User; accessToken?: string }>("/auth/me");
+                const { user, accessToken: maybeNewAccessToken } = meResp.data;
+                if (maybeNewAccessToken) setAccessToken(maybeNewAccessToken);
+                setState({ user, isAuthenticated: true, isLoading: false });
+            } catch {
+                // Cuối cùng coi như chưa đăng nhập
                 clearTokens();
-                setState({
-                    user: null,
-                    isAuthenticated: false,
-                    isLoading: false,
-                });
+                setState({ user: null, isAuthenticated: false, isLoading: false });
             }
         };
 
@@ -68,6 +80,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
             // Chuyển hướng sau khi đăng nhập thành công
             navigate('/home');
+
+            // Invalidate and refetch user data
+            queryClient.invalidateQueries({ queryKey: ['me'] });
         } catch (error: unknown) {
             console.log('Login failed, processing error...', error);
             // Xóa tokens nếu đăng nhập thất bại
@@ -123,10 +138,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                         isAuthenticated: false,
                         isLoading: false,
                     });
+                    // Remove cached user data
+                    queryClient.removeQueries({ queryKey: ['me'] });
                     navigate('/login');
                 }
             })();
-    }, [navigate]);
+    }, [navigate, queryClient]);
 
     // Cập nhật thông tin user
     const updateUser = useCallback((user: User) => {
