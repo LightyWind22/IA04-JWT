@@ -28,6 +28,9 @@ export const clearTokens = () => {
   accessToken = null;
 };
 
+// Getter for current access token (read-only)
+export const getAccessToken = (): string | null => accessToken;
+
 // Request interceptor
 // Ensure the access token is attached to every request
 axiosInstance.interceptors.request.use(
@@ -68,7 +71,6 @@ const refreshAccessToken = async (): Promise<string> => {
       }
     );
     const { accessToken: newAccessToken } = response.data;
-    console.log('Refreshed Access Token:', newAccessToken);
     accessToken = newAccessToken;
     return newAccessToken;
   } catch (error) {

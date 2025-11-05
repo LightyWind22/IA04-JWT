@@ -1,4 +1,5 @@
 import { useAuth } from '../hooks/useAuth';
+import { getAccessToken } from '../lib/axios';
 
 export default function Home() {
   const { user, logout } = useAuth();
@@ -15,6 +16,7 @@ export default function Home() {
         {user && (
           <div className="mt-4">
             <p className="text-gray-600">Welcome <span className="font-medium text-purple-500">{user.email}!</span></p>
+            <p className="text-gray-600 break-all mt-2">Current access token: <span className="font-mono">{getAccessToken() || 'N/A'}</span></p>
           </div>
         )}
         <div className="mt-6">

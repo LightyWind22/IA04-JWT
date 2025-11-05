@@ -3,7 +3,7 @@ import { AuthState, LoginCredentials, LoginResponse, User } from '../types/auth.
 import { axiosInstance, clearTokens, setAccessToken } from './axios';
 import { AuthContext } from './authContext';
 import { useNavigate } from 'react-router-dom';
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -21,19 +21,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     useEffect(() => {
         const initializeAuth = async () => {
             try {
-                // Lấy thông tin user từ API (refresh token sẽ được gửi tự động qua cookie)
-                const response = await axiosInstance.get<{ user: User; accessToken: string }>('/auth/me');
-                const { user, accessToken } = response.data;
+                // Gọi trực tiếp /auth/me. Interceptor sẽ tự refresh khi gặp 401 và retry.
+                const response = await axiosInstance.get<{ user: User; accessToken?: string }>("/auth/me");
+                const { user, accessToken: maybeNewAccessToken } = response.data;
 
-                // Lưu access token mới
-                setAccessToken(accessToken);
+                if (maybeNewAccessToken) {
+                    setAccessToken(maybeNewAccessToken);
+                }
+
                 setState({
                     user,
                     isAuthenticated: true,
                     isLoading: false,
                 });
             } catch (error) {
-                // Xóa tokens nếu có lỗi và reset state
+                // Không điều hướng ở đây, chỉ reset state. Route guard có thể xử lý redirect.
                 clearTokens();
                 setState({
                     user: null,

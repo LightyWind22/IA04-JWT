@@ -92,7 +92,7 @@ export default function Login() {
         </form>
 
         {(errors.root?.serverError || (isError && error)) && (
-            <p className="mt-4 text-center text-sm text-red-60">
+            <p className="mt-4 text-center text-sm text-red-600">
               {errors.root?.serverError?.message || 
                (error instanceof Error ? error.message : 'Login failed. Please try again.')}
             </p>
