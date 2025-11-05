@@ -23,7 +23,7 @@ export default function Login() {
     resolver: zodResolver(loginSchema),
   });
 
-  const { mutate, isPending, isError, error } = useMutation({
+  const { mutate, isError, error } = useMutation({
     mutationFn: (data: LoginFormData) => auth.login(data),
     onError: (error: Error) => {
       console.error('Mutation error:', error);

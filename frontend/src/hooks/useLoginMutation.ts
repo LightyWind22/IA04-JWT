@@ -1,12 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useAuth } from './useAuth';
 import type { LoginCredentials } from '../types/auth.types';
-import { AxiosError } from 'axios';
-
-interface ErrorResponse {
-  message: string;
-  statusCode: number;
-}
+// Removed unused AxiosError import and ErrorResponse interface
 
 export const useLoginMutation = () => {
   const auth = useAuth();

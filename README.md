@@ -1,3 +1,79 @@
+# React + Vite + Tailwind + React Query + JWT Auth
+
+This app demonstrates a secure JWT authentication flow with access + refresh tokens, Axios interceptors, React Query for server state, and React Hook Form for validation.
+
+## Features
+- Access token in-memory, refresh token via HttpOnly cookie
+- Axios interceptors attach Authorization and auto-refresh on 401
+- React Query: login/logout mutations, `useUserQuery` for `GET /auth/me`
+- Protected routes with loading spinner
+- Optimized bootstrap (refresh + optional user) to reduce network waterfall
+
+## Getting Started
+
+### Prerequisites
+- Node 18+
+- Backend API running (default `http://localhost:3000`)
+
+### Install
+```bash
+cd frontend
+npm install
+```
+
+### Configure
+Create a `.env` in `frontend`:
+```bash
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### Run
+```bash
+cd frontend
+npm run dev
+```
+
+## Deployment (Public Hosting)
+
+### Vercel (recommended)
+1. Push this repo to GitHub.
+2. Import the repo in Vercel, select the `frontend` folder as the project root.
+3. Framework: Vite; Build: `npm run build`; Output: `dist`.
+4. Add Environment Variable `VITE_API_BASE_URL` to your API URL.
+5. Deploy. Ensure backend CORS allows your Vercel domain.
+
+### Netlify
+1. New site from Git -> select repo.
+2. Base directory: `frontend`
+3. Build command: `npm run build`
+4. Publish directory: `dist`
+5. Add env `VITE_API_BASE_URL`.
+6. Add SPA redirect (Netlify UI) or place `_redirects` in `public/` with:
+```
+/*    /index.html   200
+```
+
+## Notes on Assignment Requirements
+- Spec asks to store refresh token in localStorage. This project uses HttpOnly cookie instead (more secure, aligns with stretch goal). If you must use localStorage, adapt backend + client to read/write `refreshToken` from localStorage and send in refresh request body.
+
+## Public URL
+- After deployment, add your live URL here:
+```
+https://your-app-url.example.com
+```
+
+## Scripts (common)
+- `npm run dev` – start dev server
+- `npm run build` – production build
+- `npm run preview` – preview production build
+
+## Folder Highlights
+- `frontend/src/lib/axios.ts` – Axios instance + refresh logic
+- `frontend/src/lib/auth.tsx` – Auth provider and bootstrap
+- `frontend/src/hooks/useUserQuery.ts` – `GET /auth/me`
+- `frontend/src/hooks/useLogoutMutation.ts` – logout mutation
+- `frontend/src/components/ProtectedRoute.tsx` – route guard + spinner
+
 # IA03 — User Registration (NestJS + React)
 
 A monorepo with a NestJS backend API and a React (Vite + Tailwind + shadcn/ui) frontend implementing user registration and login flows.
