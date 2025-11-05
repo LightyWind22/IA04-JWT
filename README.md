@@ -56,11 +56,9 @@ npm run dev
 ## Notes on Assignment Requirements
 - Spec asks to store refresh token in localStorage. This project uses HttpOnly cookie instead (more secure, aligns with stretch goal). If you must use localStorage, adapt backend + client to read/write `refreshToken` from localStorage and send in refresh request body.
 
-## Public URL
-- After deployment, add your live URL here:
-```
-https://your-app-url.example.com
-```
+## Live URLs
+- Frontend (Vercel): [`https://ia4-jwt-fe.vercel.app/`](https://ia4-jwt-fe.vercel.app/)
+- Backend (Vercel): [`https://ia4-jwt-be.vercel.app/`](https://ia4-jwt-be.vercel.app/)
 
 ## Scripts (common)
 - `npm run dev` – start dev server
@@ -73,6 +71,84 @@ https://your-app-url.example.com
 - `frontend/src/hooks/useUserQuery.ts` – `GET /auth/me`
 - `frontend/src/hooks/useLogoutMutation.ts` – logout mutation
 - `frontend/src/components/ProtectedRoute.tsx` – route guard + spinner
+
+## Run Locally (Full Setup)
+
+### 1) Backend (NestJS)
+
+Prerequisites:
+- Node 18+
+
+Steps:
+1. Open a terminal at the repo root, then:
+   ```bash
+   cd backend
+   npm install
+   npm run build
+   npm run start:prod
+   ```
+   By default the server listens on `http://localhost:3000`.
+
+2. Ensure CORS is enabled in the backend to allow the frontend origin (`http://localhost:5173` during Vite dev). If you use Nest's standard CORS:
+   ```ts
+   // main.ts (example)
+   app.enableCors({
+     origin: ['http://localhost:5173'],
+     credentials: true,
+   });
+   ```
+
+3. Cookies for local dev:
+   - Set refresh token cookie with `httpOnly: true`, `sameSite: 'lax'` (or `'none'` if cross-site) and `secure: false` for localhost.
+   - In production (Vercel), use `secure: true` and `sameSite: 'strict'`/`'none'` as appropriate.
+
+### 2) Frontend (Vite)
+
+Steps:
+1. In another terminal:
+   ```bash
+   cd frontend
+   npm install
+   ```
+2. Create `.env` in `frontend/`:
+   ```bash
+   VITE_API_BASE_URL=http://localhost:3000
+   ```
+3. Start dev server:
+   ```bash
+   npm run dev
+   ```
+   The app runs at `http://localhost:5173` and calls the backend at `http://localhost:3000` with `withCredentials` enabled for cookies.
+
+### 3) Build for Production (Frontend)
+```bash
+cd frontend
+npm run build
+npm run preview
+```
+
+## API Endpoints (Backend)
+- `POST /auth/register` – optional, if implemented
+- `POST /auth/login` – returns `{ user, accessToken }` and sets refresh token cookie
+- `POST /auth/refresh` – uses refresh token cookie, returns `{ accessToken }` (and may rotate refresh cookie)
+- `POST /auth/logout` – clears refresh token cookie
+- `GET /auth/me` – returns `{ user, accessToken? }`
+
+## Deployment Notes
+- Frontend (Vercel):
+  - Project root: `frontend`
+  - Build command: `npm run build`
+  - Output directory: `dist`
+  - Env: `VITE_API_BASE_URL=https://ia4-jwt-be.vercel.app`
+- Backend (Vercel):
+  - Project root: `backend`
+  - Build command: `npm run build`
+  - `backend/vercel.json` is provided to run `dist/main.js` as a Node function.
+  - Ensure CORS allows your frontend domain (`https://ia4-jwt-fe.vercel.app`).
+
+References:
+- Frontend (live): [`https://ia4-jwt-fe.vercel.app/`](https://ia4-jwt-fe.vercel.app/)
+- Backend (live): [`https://ia4-jwt-be.vercel.app/`](https://ia4-jwt-be.vercel.app/)
 
 # IA03 — User Registration (NestJS + React)
 
