@@ -1,0 +1,10 @@
+[core]
+	repositoryformatversion = 0
+	filemode = false
+	bare = false
+	logallrefupdates = true
+	symlinks = false
+	ignorecase = true
+[remote "origin"]
+	url = https://github.com/LightyWind22/IA03-User_Registration_API_with_React_Frontend.git
+	fetch = +refs/heads/*:refs/remotes/origin/*
